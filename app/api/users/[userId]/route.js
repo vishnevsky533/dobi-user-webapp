@@ -1,9 +1,13 @@
+// app/api/users/[userId]/route.js
+
 import dbConnect from '@/utils/dbConnect';
 import User from '@/models/User';
 
 export async function GET(request, { params }) {
     await dbConnect();
-    const { userId } = params;
+    const resolvedParams = await params;
+    const { userId } = resolvedParams;
+
     const user = await User.findOne({ public_id: userId });
 
     if (user) {
