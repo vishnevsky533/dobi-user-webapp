@@ -1,11 +1,12 @@
 // app/page.js
 'use client';
 
-import { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 import axios from 'axios';
 import Button from '@/components/Button';
-import { FaCheckCircle, FaExclamationCircle, FaTelegramPlane } from 'react-icons/fa';
+import {FaCheckCircle, FaExclamationCircle, FaTelegramPlane} from 'react-icons/fa';
 import Link from 'next/link';
+import Loading from "@/components/Loading";
 
 export default function HomePage() {
     const [userId, setUserId] = useState(null);
@@ -21,6 +22,9 @@ export default function HomePage() {
     const [showRulesCheckbox, setShowRulesCheckbox] = useState(false);
     const [rulesAccepted, setRulesAccepted] = useState(false);
     const [botStartLink, setBotStartLink] = useState('');
+    const [showNicknameInstruction, setShowNicknameInstruction] = useState(false);
+    const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
+    const [showUserBanned, setShowUserBanned] = useState(false);
 
     useEffect(() => {
         if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
@@ -62,18 +66,48 @@ export default function HomePage() {
     const checkUserRegistration = async (userId, publicationId) => {
         try {
             const response = await axios.get(`/api/users/${userId}`);
-            if (response.status === 200) {
+            if (response.status === 200 && response.data.success) {
+                const {isBanned, hasNickname, isSubscribed, rulesAccepted} = response.data.user;
+
+                if (isBanned) {
+                    setShowUserBanned(true);
+                    setIsLoading(false);
+                    return;
+                }
+
+                if (!hasNickname) {
+                    setShowNicknameInstruction(true);
+                    setIsLoading(false);
+                    return;
+                }
+
+                if (!isSubscribed) {
+                    setShowSubscriptionPrompt(true);
+                    // setStatusMessage('Чтобы участвовать в наших акциях, вы должны быть подписаны на наш канал.');
+                    setIsLoading(false);
+                    return;
+                }
+
+                if (!rulesAccepted) {
+                    setShowRulesCheckbox(true);
+                    setIsLoading(false);
+                    return;
+                }
+
+
+                // Если все проверки пройдены, регистрируем пользователя в акции
                 await registerUserInPromotion(userId, publicationId);
             }
         } catch (error) {
             if (error.response && error.response.status === 404) {
                 setShowRulesCheckbox(true);
-                setIsLoading(false);
+            } else if (error.response && error.response.status === 403) {
+                setShowUserBanned(true);
             } else {
                 console.error('Ошибка при проверке пользователя:', error);
                 setStatusMessage('Произошла ошибка при проверке пользователя.');
-                setIsLoading(false);
             }
+            setIsLoading(false);
         }
     };
 
@@ -130,7 +164,7 @@ export default function HomePage() {
                 });
 
                 if (response.status === 200 && response.data.success) {
-                    // Используем publicationId из состояния или startParam
+                    // После регистрации пользователя в базе, регистрируем его в акции
                     await registerUserInPromotion(userId, publicationId);
                 } else {
                     console.error('Ошибка при регистрации пользователя в боте');
@@ -151,27 +185,18 @@ export default function HomePage() {
     };
 
     const goToPromotionsGroup = () => {
-        window.location.href = `https://t.me/${process.env.NEXT_PUBLIC_PROMOTIONS_GROUP_LINK}`;
+        window.location.href = `https://t.me/${process.env.NEXT_PUBLIC_PUBLICATION_GROUP_NAME}`;
     };
+
+    const goToInstruction = () => {
+        window.open("https://telegra.ph/Instrukciya-Kak-ustanovit-sebe-nik-09-03", "_blank")
+    }
 
     return (
         <div className="flex items-center justify-center bg-theme flex-grow">
-            {isLoading ? (
-                <div role="status">
-                    <svg aria-hidden="true"
-                         className="w-8 h-8 text-gray-200 animate-spin loading-fill"
-                         viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-                            fill="currentColor"/>
-                        <path
-                            d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-                            fill="currentFill"/>
-                    </svg>
-                    <span className="sr-only">Loading...</span>
-                </div>
-            ) : (
-                <div className="max-w-md mx-auto bg-section-bg-color border rounded-lg p-6">
+            {isLoading ? <Loading/> : (
+                <div className="max-w-md mx-auto bg-section-bg-color border border-color rounded-lg p-6">
+                    {/* Сообщение о статусе */}
                     {statusMessage && (
                         <div
                             className={`flex items-center p-4 mb-4 ${
@@ -190,6 +215,48 @@ export default function HomePage() {
                         </div>
                     )}
 
+                    {/* Проверка на блокировку пользователя */}
+                    {showUserBanned && (
+                        <div className="flex flex-col items-center justify-center">
+                            <FaExclamationCircle className="destructive-text-color w-12 h-12 mb-4"/>
+                            <p className="text-center destructive-text-color">
+                                Ваш аккаунт заблокирован и вы не можете участвовать в акциях.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Проверка наличия никнейма */}
+                    {showNicknameInstruction && (
+                        <div className="flex flex-col items-center justify-center">
+                            <FaExclamationCircle className="accent-text-color w-12 h-12 mb-4"/>
+                            <p className="text-center accent-text-color">
+                                Чтобы участвовать в наших акциях - на вашем аккаунте обязательно должен быть ник.
+                                <br/>
+                                Вот инструкция как его установить:{' '}
+                                <Button
+                                    onClick={goToInstruction}
+                                    className="mt-4 bg-button-color button-text-color"
+                                >
+                                    Инструкция
+                                </Button>
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Проверка подписки на канал */}
+                    {showSubscriptionPrompt && (
+                        <div className="flex flex-col items-center justify-center">
+                            <FaExclamationCircle className="w-12 h-12 mb-4 accent-text-color"/>
+                            <p className="text-center accent-text-color">
+                                Чтобы участвовать в наших акциях, вы должны быть подписаны на наш канал.
+                            </p>
+                            <Button onClick={goToPromotionsGroup} className="mt-4 bg-button-color button-text-color">
+                                Перейти на канал
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Кнопка открытия бота */}
                     {showOpenBotButton && (
                         <Button onClick={openBot} className="w-full button-text-color bg-button">
                             <div className="flex items-center justify-center">
@@ -199,17 +266,21 @@ export default function HomePage() {
                         </Button>
                     )}
 
+                    {/* Кнопка перехода в группу с акциями */}
                     {showReturnToGroupButton && (
                         <Button onClick={goToPromotionsGroup} className="w-full button-text-color bg-button mt-4">
                             Перейти в группу с акциями
                         </Button>
                     )}
 
+                    {/* Чекбокс принятия правил */}
                     {showRulesCheckbox && (
                         <div className="space-y-4">
                             <p className="text-lg font-medium text-color">
                                 Чтобы продолжить, примите наши{' '}
-                                <Link href="/rules" rel="noopener noreferrer" className="link-color">правила</Link>
+                                <Link href="/rules" rel="noopener noreferrer" className="link-color">
+                                    правила
+                                </Link>
                             </p>
                             <label className="inline-flex items-center hint-color">
                                 <input
@@ -218,9 +289,7 @@ export default function HomePage() {
                                     checked={rulesAccepted}
                                     onChange={handleCheckboxChange}
                                 />
-                                <span className="ml-2">
-                                    Я принимаю правила
-                                </span>
+                                <span className="ml-2">Я принимаю правила</span>
                             </label>
                             <Button onClick={registerUser} disabled={!rulesAccepted}
                                     className="w-full bg-button-color button-text-color">

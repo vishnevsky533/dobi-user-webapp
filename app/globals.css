@@ -132,6 +132,10 @@ body {
     color: var(--tg-theme-button-text-color);
 }
 
+.border-color {
+    border-color: var(--tg-theme-section-separator-color);
+}
+
 /* Класс для сепараторов секций */
 .section-separator-color {
     border-color: var(--tg-theme-section-separator-color);
