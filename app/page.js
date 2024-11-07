@@ -1,11 +1,14 @@
-// app/page.js
 'use client';
 
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
-import Button from '@/components/Button';
-import {FaCheckCircle, FaExclamationCircle, FaTelegramPlane} from 'react-icons/fa';
-import Link from 'next/link';
+import Alert from '@/components/Alert';
+import UserBanned from '@/components/UserBanned';
+import NicknameInstruction from '@/components/NicknameInstruction';
+import SubscriptionPrompt from '@/components/SubscriptionPrompt';
+import OpenBotButton from '@/components/OpenBotButton';
+import ReturnToGroupButton from '@/components/ReturnToGroupButton';
+import RulesCheckbox from '@/components/RulesCheckbox';
 import Loading from "@/components/Loading";
 
 export default function HomePage() {
@@ -194,108 +197,23 @@ export default function HomePage() {
 
     return (
         <div className="flex items-center justify-center bg-theme flex-grow">
-            {isLoading ? <Loading/> : (
+            {isLoading ? (
+                <Loading />
+            ) : (
                 <div className="max-w-md mx-auto bg-section-bg-color border border-color rounded-lg p-6">
-                    {/* Сообщение о статусе */}
-                    {statusMessage && (
-                        <div
-                            className={`flex items-center p-4 mb-4 ${
-                                isSuccess
-                                    ? 'accent-text-color bg-section'
-                                    : 'destructive-text-color bg-tg-theme-destructive-text-color'
-                            } rounded-lg`}
-                            role="alert"
-                        >
-                            {isSuccess ? (
-                                <FaCheckCircle className="mr-3 flex-shrink-0 w-6 h-6"/>
-                            ) : (
-                                <FaExclamationCircle className="mr-3 flex-shrink-0 w-6 h-6"/>
-                            )}
-                            <span>{statusMessage}</span>
-                        </div>
-                    )}
+                    {statusMessage && <Alert isSuccess={isSuccess} message={statusMessage} />}
 
-                    {/* Проверка на блокировку пользователя */}
-                    {showUserBanned && (
-                        <div className="flex flex-col items-center justify-center">
-                            <FaExclamationCircle className="destructive-text-color w-12 h-12 mb-4"/>
-                            <p className="text-center destructive-text-color">
-                                Ваш аккаунт заблокирован и вы не можете участвовать в акциях.
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Проверка наличия никнейма */}
-                    {showNicknameInstruction && (
-                        <div className="flex flex-col items-center justify-center">
-                            <FaExclamationCircle className="accent-text-color w-12 h-12 mb-4"/>
-                            <p className="text-center accent-text-color">
-                                Чтобы участвовать в наших акциях - на вашем аккаунте обязательно должен быть ник.
-                                <br/>
-                                Вот инструкция как его установить:{' '}
-                                <Button
-                                    onClick={goToInstruction}
-                                    className="mt-4 bg-button-color button-text-color"
-                                >
-                                    Инструкция
-                                </Button>
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Проверка подписки на канал */}
-                    {showSubscriptionPrompt && (
-                        <div className="flex flex-col items-center justify-center">
-                            <FaExclamationCircle className="w-12 h-12 mb-4 accent-text-color"/>
-                            <p className="text-center accent-text-color">
-                                Чтобы участвовать в наших акциях, вы должны быть подписаны на наш канал.
-                            </p>
-                            <Button onClick={goToPromotionsGroup} className="mt-4 bg-button-color button-text-color">
-                                Перейти на канал
-                            </Button>
-                        </div>
-                    )}
-
-                    {/* Кнопка открытия бота */}
-                    {showOpenBotButton && (
-                        <Button onClick={openBot} className="w-full button-text-color bg-button">
-                            <div className="flex items-center justify-center">
-                                <FaTelegramPlane className="mr-2"/>
-                                Открыть бота
-                            </div>
-                        </Button>
-                    )}
-
-                    {/* Кнопка перехода в группу с акциями */}
-                    {showReturnToGroupButton && (
-                        <Button onClick={goToPromotionsGroup} className="w-full button-text-color bg-button mt-4">
-                            Перейти в группу с акциями
-                        </Button>
-                    )}
-
-                    {/* Чекбокс принятия правил */}
+                    {showUserBanned && <UserBanned />}
+                    {showNicknameInstruction && <NicknameInstruction goToInstruction={goToInstruction} />}
+                    {showSubscriptionPrompt && <SubscriptionPrompt goToPromotionsGroup={goToPromotionsGroup} />}
+                    {showOpenBotButton && <OpenBotButton openBot={openBot} />}
+                    {showReturnToGroupButton && <ReturnToGroupButton goToPromotionsGroup={goToPromotionsGroup} />}
                     {showRulesCheckbox && (
-                        <div className="space-y-4">
-                            <p className="text-lg font-medium text-color">
-                                Чтобы продолжить, примите наши{' '}
-                                <Link href="/rules" rel="noopener noreferrer" className="link-color">
-                                    правила
-                                </Link>
-                            </p>
-                            <label className="inline-flex items-center hint-color">
-                                <input
-                                    type="checkbox"
-                                    className="form-checkbox h-5 w-5 text-tg-theme-hint-color"
-                                    checked={rulesAccepted}
-                                    onChange={handleCheckboxChange}
-                                />
-                                <span className="ml-2">Я принимаю правила</span>
-                            </label>
-                            <Button onClick={registerUser} disabled={!rulesAccepted}
-                                    className="w-full bg-button-color button-text-color">
-                                Зарегистрироваться
-                            </Button>
-                        </div>
+                        <RulesCheckbox
+                            rulesAccepted={rulesAccepted}
+                            handleCheckboxChange={handleCheckboxChange}
+                            registerUser={registerUser}
+                        />
                     )}
                 </div>
             )}
