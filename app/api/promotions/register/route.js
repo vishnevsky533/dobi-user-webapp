@@ -5,36 +5,40 @@ import Promotion from '@/models/Promotion';
 import Publication from '@/models/Publication';
 import SlotPlace from '@/models/SlotPlace';
 import {Telegraf, Markup} from 'telegraf';
-import {generateInstructionsPartOne, generateInstructionsPartTwo, generateInstructionsPartThree} from '@/helpers/instruction';
+import {generateInstructions,
+    generateInstructionsPartOne,
+    generateInstructionsPartTwo,
+    generateInstructionsPartThree
+} from '@/helpers/instruction';
 
 const bot = new Telegraf(process.env.BOT_USER_TOKEN);
 
-function isValidURL(string) {
-    try {
-        new URL(string);
-        return true;
-    } catch (_) {
-        return false;
-    }
-}
-
-const sendInstructionPartTwo = async (userId, selectedPromotion) => {
-    try {
-        const {screenshot_link} = selectedPromotion;
-
-        if (screenshot_link && isValidURL(screenshot_link)) {
-
-            await bot.telegram.sendPhoto(userId, screenshot_link, {
-                caption: generateInstructionsPartTwo(selectedPromotion),
-                parse_mode: 'Markdown'
-            })
-        } else {
-            await bot.telegram.sendMessage(userId, generateInstructionsPartOne(selectedPromotion));
-        }
-    } catch (error) {
-        console.error(error);
-    }
-}
+// function isValidURL(string) {
+//     try {
+//         new URL(string);
+//         return true;
+//     } catch (_) {
+//         return false;
+//     }
+// }
+//
+// const sendInstructionPartTwo = async (userId, selectedPromotion) => {
+//     try {
+//         const {screenshot_link} = selectedPromotion;
+//
+//         if (screenshot_link && isValidURL(screenshot_link)) {
+//
+//             await bot.telegram.sendPhoto(userId, screenshot_link, {
+//                 caption: generateInstructionsPartTwo(selectedPromotion),
+//                 parse_mode: 'Markdown'
+//             })
+//         } else {
+//             await bot.telegram.sendMessage(userId, generateInstructionsPartOne(selectedPromotion));
+//         }
+//     } catch (error) {
+//         console.error(error);
+//     }
+// }
 
 const handleParticipation = async (userId, publicationId) => {
 
@@ -132,17 +136,27 @@ const handleParticipation = async (userId, publicationId) => {
 
         // Отправляем инструкцию пользователю
 
+        // await bot.telegram.sendMessage(
+        //     userId,
+        //     generateInstructionsPartOne(selectedPromotion),
+        //     {
+        //         parse_mode: 'Markdown',
+        //     }
+        // );
+        // // await sendInstructionPartTwo(userId, selectedPromotion);
+        // await bot.telegram.sendMessage(
+        //     userId,
+        //     generateInstructionsPartThree(selectedPromotion),
+        //     {
+        //         parse_mode: 'Markdown',
+        //         ...Markup.inlineKeyboard([
+        //                 Markup.button.callback('Управление акцией', 'promotion_menu')
+        //             ]
+        //         )}
+        // );
         await bot.telegram.sendMessage(
             userId,
-            generateInstructionsPartOne(selectedPromotion),
-            {
-                parse_mode: 'Markdown',
-            }
-        );
-        await sendInstructionPartTwo(userId, selectedPromotion);
-        await bot.telegram.sendMessage(
-            userId,
-            generateInstructionsPartThree(selectedPromotion),
+            generateInstructions(selectedPromotion),
             {
                 parse_mode: 'Markdown',
                 ...Markup.inlineKeyboard([
@@ -150,7 +164,6 @@ const handleParticipation = async (userId, publicationId) => {
                     ]
                 )}
         );
-
         return {success: true};
     } catch (error) {
         console.error('Ошибка при регистрации участия:', error);
