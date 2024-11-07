@@ -4,39 +4,70 @@ import User from '@/models/User';
 import Promotion from '@/models/Promotion';
 import Publication from '@/models/Publication';
 import SlotPlace from '@/models/SlotPlace';
-import { Telegraf, Markup } from 'telegraf';
-import { generateInstructions } from '@/helpers/instruction';
+import {Telegraf, Markup} from 'telegraf';
+import {generateInstructionsPartOne, generateInstructionsPartTwo} from '@/helpers/instruction';
 
 const bot = new Telegraf(process.env.BOT_USER_TOKEN);
+
+function isValidURL(string) {
+    try {
+        new URL(string);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+const sendInstructionPartTwo = async (userId, selectedPromotion) => {
+    try {
+        const {screenshot_link} = selectedPromotion;
+
+        if (screenshot_link && isValidURL(screenshot_link)) {
+
+            await bot.telegram.sendPhoto(userId, screenshot_link, {
+                caption: generateInstructionsPartTwo(selectedPromotion),
+                parse_mode: 'Markdown',
+                ...Markup.inlineKeyboard([
+                        Markup.button.callback('Управление акцией', 'promotion_menu')
+                    ]
+                )
+            })
+        } else {
+            await bot.telegram.sendMessage(userId, generateInstructionsPartOne(selectedPromotion));
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
 
 const handleParticipation = async (userId, publicationId) => {
 
     try {
-        const user = await User.findOne({ public_id: userId });
+        const user = await User.findOne({public_id: userId});
 
         if (!user) {
             // Пользователь не найден
-            return { success: false, message: 'Пользователь не найден' };
+            return {success: false, message: 'Пользователь не найден'};
         }
         // Получаем публикацию и акцию
         const publication = await Publication.findById(publicationId).populate('promotion_id');
         if (!publication) {
             // Публикация не найдена
-            return { success: false, message: 'Публикация не найдена' };
+            return {success: false, message: 'Публикация не найдена'};
         }
 
         const activePromotions = user.participated_promotions.filter(promotion => promotion.status === 'in_progress');
         if (activePromotions.length >= 3) {
             // Максимальное количество акций
-            return { success: false, message: 'Вы участвуете в максимальном количестве акций' };
+            return {success: false, message: 'Вы участвуете в максимальном количестве акций'};
         }
 
         if (publication.available_places <= 0) {
             // Нет доступных мест
-            return { success: false, message: 'К сожалению, в акции больше нет доступных мест' };
+            return {success: false, message: 'К сожалению, в акции больше нет доступных мест'};
         }
 
-        let slotPlace = await SlotPlace.findOne({ publication_id: publicationId });
+        let slotPlace = await SlotPlace.findOne({publication_id: publicationId});
 
         if (!slotPlace) {
             slotPlace = new SlotPlace({
@@ -49,7 +80,7 @@ const handleParticipation = async (userId, publicationId) => {
 
         if (existingParticipant) {
             // Уже зарегистрирован
-            return { success: false, message: 'Вы уже зарегистрированы в этой акции' };
+            return {success: false, message: 'Вы уже зарегистрированы в этой акции'};
         }
 
         const alreadyParticipating = user.participated_promotions.some(promotion =>
@@ -58,7 +89,7 @@ const handleParticipation = async (userId, publicationId) => {
 
         if (alreadyParticipating) {
             // Уже участвует в акции
-            return { success: false, message: 'Вы уже зарегистрированы в этой акции' };
+            return {success: false, message: 'Вы уже зарегистрированы в этой акции'};
         }
 
         // Пробуем отправить сообщение пользователю
@@ -104,31 +135,27 @@ const handleParticipation = async (userId, publicationId) => {
         const selectedPromotion = await Promotion.findById(publication.promotion_id);
 
         // Отправляем инструкцию пользователю
+
         await bot.telegram.sendMessage(
             userId,
-            generateInstructions(selectedPromotion),
-            {
-                parse_mode: 'Markdown',
-                ...Markup.inlineKeyboard([
-                    Markup.button.callback('Управление акцией', 'promotion_menu')
-                ])
-            }
+            generateInstructionsPartOne(selectedPromotion),
         );
+        await sendInstructionPartTwo(userId, selectedPromotion);
 
-        return { success: true };
+        return {success: true};
     } catch (error) {
         console.error('Ошибка при регистрации участия:', error);
-        return { success: false, message: 'Ошибка при регистрации участия' };
+        return {success: false, message: 'Ошибка при регистрации участия'};
     }
 };
 
 export async function POST(request) {
     await dbConnect();
-    const { userId, publicationId } = await request.json();
+    const {userId, publicationId} = await request.json();
     const result = await handleParticipation(userId, publicationId);
 
     if (result.success) {
-        return new Response(JSON.stringify({ success: true }), { status: 200 });
+        return new Response(JSON.stringify({success: true}), {status: 200});
     } else {
         return new Response(
             JSON.stringify({
@@ -137,7 +164,7 @@ export async function POST(request) {
                 botNotStarted: result.botNotStarted || false,
                 publicationId: result.publicationId || null
             }),
-            { status: 200 }
+            {status: 200}
         );
     }
 }

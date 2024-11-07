@@ -1,5 +1,4 @@
-
-export const generateInstructions = (promotion) => {
+export const generateInstructionsPartOne = (promotion) => {
     return `
 Имя товара: *${promotion.product_name}*
 
@@ -13,8 +12,12 @@ export const generateInstructions = (promotion) => {
 
 1. Заходим на *${promotion.market_name}* и в поиске пишем *"${promotion.search_query}"*.
 
-2. Ищем товар. Должно получится примерно вот так: *${promotion.screenshot_link || 'Ссылка отсутствует'}*.
-
+2. Ищем товар. Должно получится примерно вот так:
+`
+}
+export const generateInstructionsPartTwo = (promotion) => {
+    return `
+    
 3. Кладём в корзину и добавляем в избранное. Затем в корзину добавляем любой товар конкурента и добавляем в избранное, и минут через 15-20 удаляем конкурента из избранного и корзины и заказываем наш товар.
 
 4. Заходим в бот *@${process.env.BOT_NAME}*, нажимаем "Мои акции" - Выбираем нужную акцию - нажимаем "Подтвердить создание заказа" и следуем сообщениям бота. Далее ожидаем подтверждения от создателя акции. Без него к следующему пункту НЕ ПРИСТУПАТЬ!
