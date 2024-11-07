@@ -5,7 +5,7 @@ import Promotion from '@/models/Promotion';
 import Publication from '@/models/Publication';
 import SlotPlace from '@/models/SlotPlace';
 import {Telegraf, Markup} from 'telegraf';
-import {generateInstructionsPartOne, generateInstructionsPartTwo} from '@/helpers/instruction';
+import {generateInstructionsPartOne, generateInstructionsPartTwo, generateInstructionsPartThree} from '@/helpers/instruction';
 
 const bot = new Telegraf(process.env.BOT_USER_TOKEN);
 
@@ -26,11 +26,7 @@ const sendInstructionPartTwo = async (userId, selectedPromotion) => {
 
             await bot.telegram.sendPhoto(userId, screenshot_link, {
                 caption: generateInstructionsPartTwo(selectedPromotion),
-                parse_mode: 'Markdown',
-                ...Markup.inlineKeyboard([
-                        Markup.button.callback('Управление акцией', 'promotion_menu')
-                    ]
-                )
+                parse_mode: 'Markdown'
             })
         } else {
             await bot.telegram.sendMessage(userId, generateInstructionsPartOne(selectedPromotion));
@@ -139,8 +135,21 @@ const handleParticipation = async (userId, publicationId) => {
         await bot.telegram.sendMessage(
             userId,
             generateInstructionsPartOne(selectedPromotion),
+            {
+                parse_mode: 'Markdown',
+            }
         );
         await sendInstructionPartTwo(userId, selectedPromotion);
+        await bot.telegram.sendMessage(
+            userId,
+            generateInstructionsPartThree(selectedPromotion),
+            {
+                parse_mode: 'Markdown',
+                ...Markup.inlineKeyboard([
+                        Markup.button.callback('Управление акцией', 'promotion_menu')
+                    ]
+                )}
+        );
 
         return {success: true};
     } catch (error) {
